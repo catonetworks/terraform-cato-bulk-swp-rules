@@ -66,6 +66,20 @@ locals {
   }
 }
 
+# Safety guard: fail `plan` early if the decoded rules list is empty, unless
+# the caller explicitly opts in. Protects against a truncated export, a
+# renamed upstream JSON key, or a wrong-tenant JSON file silently destroying
+# every live rule via for_each. No provider/count/for_each here on purpose -
+# the precondition must evaluate even with zero instances elsewhere.
+resource "terraform_data" "guard_empty_policy" {
+  lifecycle {
+    precondition {
+      condition     = var.allow_empty_policy || length(local.rules_by_name) > 0
+      error_message = "Policy JSON contains 0 rules. If intentional (greenfield/teardown), set allow_empty_policy = true. A truncated or wrong-tenant export would otherwise destroy the entire live policy."
+    }
+  }
+}
+
 # Optional account-level policy toggle (Site Web Proxy ships disabled on new
 # tenants - without enabling it, published rules have no effect).
 resource "cato_site_web_proxy_policy" "policy" {
