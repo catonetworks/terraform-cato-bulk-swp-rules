@@ -109,6 +109,10 @@ resource "cato_site_web_proxy_rule" "rules" {
   }
 
   rule = local.rule_bodies[each.key]
+
+  lifecycle {
+    ignore_changes = [at] # create-only positioning; ordering owned by the move resource
+  }
 }
 
 # Ordering + republish on changes.
